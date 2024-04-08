@@ -3,7 +3,7 @@
 
 # Custom dependencies
 requests-toolbelt==1.0.0
-runpod==1.6.0
+runpod==1.6.2
 
 # Pulled from https://github.com/konieshadow/Fooocus-API/blob/main/requirements.txt
 torchsde==0.2.5
@@ -27,3 +27,8 @@ pydantic==2.4.2
 pydantic_core==2.10.1
 python-multipart==0.0.6
 uvicorn[standard]==0.23.2
+colorlog
+requests
+numpy
+sqlalchemy
+packaging

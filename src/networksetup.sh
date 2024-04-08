@@ -1,8 +1,8 @@
 #!/bin/bash
 # Config
-VERSION="0.3.30"
-API_SHA="074a956d2fc6e12e9b669cfe6611fd576dd7e315"
-FOOOCUS_SHA="624f74a1ed78ea09467c856cef35aeee0af863f6"
+VERSION="0.3.33"
+API_SHA="1c6eb9822564e43585591d137c4c117c5f100694"
+FOOOCUS_SHA="e9bc5e50c6a9e9502e822d308cb370883c4ef202"
 VOLUME_PATH="/workspace"
 VOLUME_SIZE="20GB"
 
@@ -13,12 +13,12 @@ if [ ! -d "$VOLUME_PATH" ]; then
     exit 1
 fi
 
-. /clone.sh /app https://github.com/konieshadow/Fooocus-API.git $API_SHA
+. /clone.sh /app https://github.com/mrhan1993/Fooocus-API.git $API_SHA
 . /clone.sh /app/repositories/Fooocus https://github.com/lllyasviel/Fooocus.git $FOOOCUS_SHA
 
 echo "Downloading models..."
 # Download all models (you might not need all and could save some network space depending on what endpoints and settings you'll use)
-curl -o /app/repositories/Fooocus/models/checkpoints/juggernautXL_version6Rundiffusion.safetensors -L https://huggingface.co/lllyasviel/fav_models/resolve/main/fav/juggernautXL_version6Rundiffusion.safetensors?download=true && echo "1/21"
+curl -o /app/repositories/Fooocus/models/checkpoints/juggernautXL_v8Rundiffusion.safetensors -L https://huggingface.co/lllyasviel/fav_models/resolve/main/fav/juggernautXL_v8Rundiffusion.safetensors?download=true && echo "1/21"
 curl -o /app/repositories/Fooocus/models/loras/sd_xl_offset_example-lora_1.0.safetensors -L https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_offset_example-lora_1.0.safetensors?download=true && echo "2/21"
 curl -o /app/repositories/Fooocus/models/loras/sdxl_lcm_lora.safetensors -L https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/sdxl_lcm_lora.safetensors?download=true && echo "3/21"
 curl -o /app/repositories/Fooocus/models/inpaint/fooocus_inpaint_head.pth -L https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/fooocus_inpaint_head.pth?download=true && echo "4/21"

@@ -1,14 +1,20 @@
-// ########################
 // EXAMPLE REQUEST PAYLOADS
 // ########################
 // The requests can be done in several possible ways:
 // - Send the payload (with require_base64:true on img endpoints) to https://api.runpod.ai/v2/$your-endpont-id/runsync, in this case your app will simply send a request and wait for the final response. (This works fine if the requests don't take too long and you don't have enough of them to be queued)
 // - Send the payload (with require_base64:true on img endpoints) to https://api.runpod.ai/v2/$your-endpont-id/run, in this async case your app will send a request, immediately receive obj with runpod job id that you can then use to receive the final result on https://api.runpod.ai/v2/$your-endpoint-id/status/$id
 //   To get notified when the job is finished, you can either use the Fooocus-API webhook feature, or you can just periodically fetch the job's status endpoint
+// - Send the payload (with require_base64:true, async_process:true and preview_url:"https://your.app/endpoint") to https://api.runpod.ai/v2/$your-endpont-id/run, in this case your app's listening endpoint will receive POST requests with previews periodically and also the final img once it's finished. 
 // - You can also customize the handler.py and add your own logic at the end, for example to save the image files into some external storage.
 
+// Contents:
+// 1. Minimal required
+// 2. Full payload
+// 3. Custom params (async preview stream, ..)
+
+
 // ----------------------------------------------------
-// Part one: Minimal required
+// 1: Minimal required
 // ----------------------------------------------------
 
 // **************************
@@ -298,6 +304,7 @@ models_refresh =
         "api_name":"models-refresh",
     }
 }
+// WARNING! This endpoint is deprecated! Features are merged into all-models endpoint. This endpoint will be removed in next releases!
 // returns: {"delayTime": 0, "executionTime": 0, "id":"runpod-job-id", 'output':{"model_filenames": ["string"],"lora_filenames": ["string"]}, "status":"COMPLETED"}
 
 // ----------------
@@ -312,10 +319,8 @@ styles =
 // returns: {"delayTime": 0, "executionTime": 0, "id":"runpod-job-id", 'output':["string"], "status":"COMPLETED"}
 
 
-
-
 // ----------------------------------------------------
-// Part two: Full payload
+// 2: Full payload
 // ----------------------------------------------------
 // The basic idea of params on v1/v2 (multipart/form-data vs. application/json) endpoints is: 
 // on v2 params can be standard json format, on v1 they have to be sent stringified.
@@ -349,3 +354,16 @@ v2 =
         }
     }
 }
+
+// ----------------------------------------------------
+// 3: Custom params
+// ----------------------------------------------------
+// To overcome some differences which arise from running Fooocus on RunPod serverless
+// we have to add several custom parameters to our payloads that are not part of the original Fooocus-API
+
+"api_name" // "string" - Chooses what Fooocus-API endpoint we're actually calling
+"preview_url" // "string" - If you use Fooocus-API "async_process:true" and want to get a stream of preview images, you should add your app's url endpoint where POST requests with previews will arrive
+    "preview_interval" // "number" - Optional param when using preview_url, sets how often in seconds the preview is checked and sent to your app. If not set defaults to 1
+    "preview_headers" // "object" - Optional param when using preview_url, sets custom headers to send with the preview request (for tokens, auth etc.)
+"inpaint_preset" // "string" - Custom fix for missing "Inpaint Method" selection in Fooocus-API. Can be one of: 'Improve Detail', 'Modify Content' or 'Inpaint or Outpaint'
+"clear_output" // "boolean" - Chooses if you want to keep the image files on network volume/worker local storage or not. Can be true or false. Default is true (not saving image files)
