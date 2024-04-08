@@ -6,18 +6,21 @@ COPY builder/clone.sh /clone.sh
 
 # Clone the repos
 # Fooocus-API
-RUN . /clone.sh /workspace https://github.com/konieshadow/Fooocus-API.git 074a956d2fc6e12e9b669cfe6611fd576dd7e315
+RUN . /clone.sh /workspace https://github.com/mrhan1993/Fooocus-API.git 1c6eb9822564e43585591d137c4c117c5f100694
 # Fooocus
-RUN . /clone.sh /workspace/repositories/Fooocus https://github.com/lllyasviel/Fooocus.git 624f74a1ed78ea09467c856cef35aeee0af863f6
+RUN . /clone.sh /workspace/repositories/Fooocus https://github.com/lllyasviel/Fooocus.git e9bc5e50c6a9e9502e822d308cb370883c4ef202
 
+#          Separate model stage to maintain build cache                #
+# -------------------------------------------------------------------- #
+# You can use links with RUN wget or COPY to load files from your PC
+FROM alpine:3.19.1 as models
 RUN apk add --no-cache wget
-# Models (You can use cloud links with RUN wget or COPY to load files from your PC)
-#RUN wget -q -O /workspace/repositories/Fooocus/models/checkpoints/juggernautXL_version6Rundiffusion.safetensors https://huggingface.co/lllyasviel/fav_models/resolve/main/fav/juggernautXL_version6Rundiffusion.safetensors
-    # OR
-# COPY your/path_relative_to_dockerfile/model.safetensors /workspace/repositories/Fooocus/models/checkpoints/destinationmodelname.safetensors
 
-# These are all the models Fooocus needs by default
-COPY models/juggernautXL_version6Rundiffusion.safetensors /workspace/repositories/Fooocus/models/checkpoints/juggernautXL_version6Rundiffusion.safetensors
+#RUN wget -q -O /workspace/repositories/Fooocus/models/checkpoints/juggernautXL_version6Rundiffusion.safetensors https://huggingface.co/lllyasviel/fav_models/resolve/main/fav/juggernautXL_version6Rundiffusion.safetensors
+#COPY your/path_relative_to_dockerfile/model.safetensors /workspace/repositories/Fooocus/models/checkpoints/destinationmodelname.safetensors
+
+# These are all the models Fooocus needs by default (you can download them also from https://huggingface.co/3WaD/RunPod-Fooocus-API/tree/main)
+COPY models/juggernautXL_v8Rundiffusion.safetensors /workspace/repositories/Fooocus/models/checkpoints/juggernautXL_v8Rundiffusion.safetensors
 COPY models/sd_xl_offset_example-lora_1.0.safetensors /workspace/repositories/Fooocus/models/loras/sd_xl_offset_example-lora_1.0.safetensors
 COPY models/sdxl_lcm_lora.safetensors /workspace/repositories/Fooocus/models/loras/sdxl_lcm_lora.safetensors
 COPY models/fooocus_inpaint_head.pth /workspace/repositories/Fooocus/models/inpaint/fooocus_inpaint_head.pth
@@ -42,13 +45,11 @@ COPY models/model_base_caption_capfilt_large.pth /workspace/repositories/Fooocus
 # ---------------------------------------------------------------------------- #
 #                        Part 2: Build the final image                         #
 # ---------------------------------------------------------------------------- #
-FROM python:3.10.13-slim as build_final_image
+FROM python:3.10.14-slim as build_final_image
 ENV DEBIAN_FRONTEND=noninteractive \
     PIP_PREFER_BINARY=1 \
-    LD_PRELOAD=libtcmalloc.so \
     PYTHONUNBUFFERED=1
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN export TORCH_COMMAND='pip install --pre torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.6'
 
 # Update and upgrade the system packages
 RUN apt-get update && \
@@ -61,6 +62,7 @@ RUN --mount=type=cache,target=/cache --mount=type=cache,target=/root/.cache/pip 
 
 # Copy downloaded data to the final image
 COPY --from=download /workspace/ /workspace/
+COPY --from=models /workspace/repositories/Fooocus/models /workspace/repositories/Fooocus/models
 # Change Fooocus configs
 COPY src/config.txt /workspace/repositories/Fooocus/config.txt
 COPY src/default.json /workspace/repositories/Fooocus/presets/default.json

@@ -1,5 +1,5 @@
 ## How to use standalone image
-- [**Create RunPod serverless endpoint:**](https://www.runpod.io/console/serverless) use `3wad/runpod-fooocus-api:0.3.30-standalone`
+- [**Create RunPod serverless endpoint:**](https://www.runpod.io/console/serverless) use `3wad/runpod-fooocus-api:0.3.33-standalone`
 - Other settings are your choice, but I personally found that using 4090/L4 GPUs + Flashboot is the most cost-effective one.
 - That's it! See the [request_examples]() for how to make requests to this endpoint from your app.
 

@@ -5,6 +5,7 @@ import time
 import requests
 import re
 import base64
+import json
 # Dependencies
 import runpod
 from requests.adapters import HTTPAdapter, Retry
@@ -53,7 +54,7 @@ def run_inference(params):
             "stop": ("POST", "/v1/generation/stop"), 
             "describe": ("POST", "/v1/tools/describe-image"), #multipart/form-data
             "models": ("GET", "/v1/engines/all-models"), 
-            "models-refresh": ("POST", "/v1/engines/refresh-models"), 
+            "models-refresh": ("POST", "/v1/engines/refresh-models"), #Deprecated! Features are merged into all-models endpoint. This endpoint will be removed in next releases!
             "styles": ("GET", "/v1/engines/styles") 
         },
         "timeout": 300
@@ -68,6 +69,12 @@ def run_inference(params):
     api_verb = api_config[0]
     api_path = api_config[1]
     response = {}
+
+    # Check for inpaint preset
+    if "inpaint_preset" in params:
+        result = inpaint_preset(params)
+        if result is not True:
+            raise ValueError("inpaint_preset task failed: " + result)
 
     # You can send the input_image, input_mask, and cn_images as PNG: binary encoded into base64 string OR as url string
     input_imgs = {'input_image':None, 'input_mask':None, 'cn_img1':None, 'cn_img2':None, 'cn_img3':None, 'cn_img4':None, 'image_prompts':[None,None,None,None], 'image':None}
@@ -146,6 +153,59 @@ def run_inference(params):
     else:
         return response.text
 
+def preview_stream(json, event):
+    try:
+        job_finished = False
+        while job_finished is False:
+            preview = sd_session.get('http://127.0.0.1:8888/v1/generation/query-job', params={"job_id":json["job_id"], "require_step_preview": "true"}).json()
+            requests.post(event["input"]["preview_url"], json=preview, headers=event["input"].get('preview_headers', ''))
+            if(preview["job_stage"] == "SUCCESS" or preview["job_stage"] == "ERROR"):
+                job_finished = True
+                return
+            time.sleep(event["input"].get('preview_interval', 1))
+    except Exception as e:
+        print("async preview task failed: ", e)
+        return e
+    
+def clearOutput():
+    try:
+        print("Clearing outputs...")
+        shutil.rmtree('/workspace/outputs/files')
+        os.makedirs('/workspace/outputs/files')
+        shutil.rmtree('/workspace/repositories/Fooocus/outputs')
+        os.makedirs('/workspace/repositories/Fooocus/outputs')
+    except Exception as e:
+        print("clear outputs task failed: ", e)
+        return e
+
+def inpaint_preset(params):
+    option = params.get("inpaint_preset")
+    multipart = False
+    if params["api_name"] in ["upscale-vary", "inpaint-outpaint", "img2img", "describe"]: multipart = True
+    if "advanced_params" not in params: params["advanced_params"] = "{}" if multipart is True else {}
+    if multipart is True: params["advanced_params"] = json.loads(params["advanced_params"])
+    if "inpaint_additional_prompt" not in params: 
+        return "inpaint_additional_prompt parameter not found. Be sure to write there what you want to inpaint or improve"
+    if option == "Improve Detail":
+        params["advanced_params"]["inpaint_disable_initial_latent"] = False
+        params["advanced_params"]["inpaint_engine"] = "None"
+        params["advanced_params"]["inpaint_strength"] = 0.5
+        params["advanced_params"]["inpaint_respective_field"] = 0.0
+    elif option == "Modify Content": 
+        params["advanced_params"]["inpaint_disable_initial_latent"] = True
+        params["advanced_params"]["inpaint_engine"] = "v2.6"
+        params["advanced_params"]["inpaint_strength"] = 1.0
+        params["advanced_params"]["inpaint_respective_field"] = 0.0
+    elif option == "Inpaint or Outpaint": 
+        params["advanced_params"]["inpaint_disable_initial_latent"] = True
+        params["advanced_params"]["inpaint_engine"] = "v2.6"
+        params["advanced_params"]["inpaint_strength"] = 1.0
+        params["advanced_params"]["inpaint_respective_field"] = 0.0  
+    else: 
+        return "Preset not found. Be sure to use exactly one of: 'Improve Detail', 'Modify Content' or 'Inpaint or Outpaint'"
+    if multipart is True: params["advanced_params"] = json.dumps(params["advanced_params"])
+    return True
+
 # ---------------------------------------------------------------------------- #
 #                                RunPod Handler                                #
 # ---------------------------------------------------------------------------- #
@@ -153,14 +213,18 @@ def handler(event):
     '''
     This is the handler function that will be called by the serverless.
     '''
-    # Clear outputs (Comment out or delete this part to keep images on the volume. Keep in mind you'll always need enough space to generate more)
-    print("Clearing outputs...")
-    shutil.rmtree('/workspace/outputs/files')
-    os.makedirs('/workspace/outputs/files')
-    shutil.rmtree('/workspace/repositories/Fooocus/outputs')
-    os.makedirs('/workspace/repositories/Fooocus/outputs')
+    # Check for clear outputs option (defaults to True, send "clear_output":false in your generation params to keep the images stored on the network volume.)
+    # This also works on standalone but does not make much sense since storage is local for the individual workers and is deleted once they go down anyway.
+    clear_output = event["input"].get("clear_output", True)
+    if clear_output:
+        clearOutput()
 
+    # Main process
     json = run_inference(event["input"])
+    
+    # Check for async preview streaming (turn this on by adding "async_process":true in your generation params and include custom "preview_url":"https://your.app/endpoint")
+    if 'preview_url' in event["input"] and 'job_step_preview' in json:
+        preview_stream(json, event)
     
     # Return the output that you want to be returned like pre-signed URLs to output artifacts
     return json
