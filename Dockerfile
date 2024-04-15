@@ -20,6 +20,8 @@ RUN apk add --no-cache wget
 #COPY your/path_relative_to_dockerfile/model.safetensors /workspace/repositories/Fooocus/models/checkpoints/destinationmodelname.safetensors
 
 # These are all the models Fooocus needs by default (you can download them also from https://huggingface.co/3WaD/RunPod-Fooocus-API/tree/main)
+# sd_xl_offset_example-lora_1.0 can be found on stabilityai huggingface - https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/tree/main and different checkpoint models can be obtained from Civitai
+# If you're changing those, don't forget to change what models are used by default in /src/config.txt and /src/default.json
 COPY models/juggernautXL_v8Rundiffusion.safetensors /workspace/repositories/Fooocus/models/checkpoints/juggernautXL_v8Rundiffusion.safetensors
 COPY models/sd_xl_offset_example-lora_1.0.safetensors /workspace/repositories/Fooocus/models/loras/sd_xl_offset_example-lora_1.0.safetensors
 COPY models/sdxl_lcm_lora.safetensors /workspace/repositories/Fooocus/models/loras/sdxl_lcm_lora.safetensors
