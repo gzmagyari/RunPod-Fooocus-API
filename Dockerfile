@@ -6,11 +6,9 @@ COPY builder/clone.sh /clone.sh
 
 # Clone the repos
 # Fooocus-API
-RUN . /clone.sh /workspace https://github.com/mrhan1993/Fooocus-API.git 1c6eb9822564e43585591d137c4c117c5f100694
-# Fooocus
-RUN . /clone.sh /workspace/repositories/Fooocus https://github.com/lllyasviel/Fooocus.git e9bc5e50c6a9e9502e822d308cb370883c4ef202
+RUN . /clone.sh /workspace https://github.com/mrhan1993/Fooocus-API.git a50ed2f7db116f49e168c634ce4fa639ca42dda7
 
-#          Separate model stage to maintain build cache                #
+#                       Separate model stage                           #
 # -------------------------------------------------------------------- #
 # You can use links with RUN wget or COPY to load files from your PC
 FROM alpine:3.19.1 as models
@@ -20,8 +18,6 @@ RUN apk add --no-cache wget
 #COPY your/path_relative_to_dockerfile/model.safetensors /workspace/repositories/Fooocus/models/checkpoints/destinationmodelname.safetensors
 
 # These are all the models Fooocus needs by default (you can download them also from https://huggingface.co/3WaD/RunPod-Fooocus-API/tree/main)
-# sd_xl_offset_example-lora_1.0 can be found on stabilityai huggingface - https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/tree/main and different checkpoint models can be obtained from Civitai
-# If you're changing those, don't forget to change what models are used by default in /src/config.txt and /src/default.json
 COPY models/juggernautXL_v8Rundiffusion.safetensors /workspace/repositories/Fooocus/models/checkpoints/juggernautXL_v8Rundiffusion.safetensors
 COPY models/sd_xl_offset_example-lora_1.0.safetensors /workspace/repositories/Fooocus/models/loras/sd_xl_offset_example-lora_1.0.safetensors
 COPY models/sdxl_lcm_lora.safetensors /workspace/repositories/Fooocus/models/loras/sdxl_lcm_lora.safetensors
@@ -66,7 +62,6 @@ RUN --mount=type=cache,target=/cache --mount=type=cache,target=/root/.cache/pip 
 COPY --from=download /workspace/ /workspace/
 COPY --from=models /workspace/repositories/Fooocus/models /workspace/repositories/Fooocus/models
 # Change Fooocus configs
-COPY src/config.txt /workspace/repositories/Fooocus/config.txt
 COPY src/default.json /workspace/repositories/Fooocus/presets/default.json
 
 # Install Python dependencies

@@ -21,9 +21,7 @@ sd_session.mount('http://', HTTPAdapter(max_retries=retries))
 # ---------------------------------------------------------------------------- #
 
 def wait_for_service(url):
-    '''
-    Check if the service is ready to receive requests.
-    '''
+    # Check if the service is ready to receive requests
     while True:
         try:
             requests.get(url)
@@ -38,24 +36,27 @@ def run_inference(params):
     config = {
         "baseurl": "http://127.0.0.1:8888",
         "api": {
-            "home": ("GET", "/"), 
-            "ping": ("GET", "/ping"), 
-            "txt2img":  ("POST", "/v1/generation/text-to-image"), 
-            "txt2img-ip": ("POST", "/v2/generation/text-to-image-with-ip"),
-            "upscale-vary": ("POST", "/v1/generation/image-upscale-vary"), #multipart/form-data
-            "upscale-vary2": ("POST", "/v2/generation/image-upscale-vary"),
-            "inpaint-outpaint": ("POST", "/v1/generation/image-inpaint-outpaint"), #multipart/form-data
-            "inpaint-outpaint2": ("POST", "/v2/generation/image-inpaint-outpaint"),
-            "img2img":  ("POST", "/v1/generation/image-prompt"), #multipart/form-data
-            "img2img2":  ("POST", "/v2/generation/image-prompt"),
+            ### Query
+            "home": ("GET", "/"),
+            "ping": ("GET", "/ping"),
             "queryjob": ("GET", "/v1/generation/query-job"),
             "jobqueue": ("GET", "/v1/generation/job-queue"),
-            "jobhistory": ("GET", "/v1/generation/job-history"), 
-            "stop": ("POST", "/v1/generation/stop"), 
+            "jobhistory": ("GET", "/v1/generation/job-history"),
+            "models": ("GET", "/v1/engines/all-models"),
+            "styles": ("GET", "/v1/engines/styles"),
+            ### GenerateV1
+            "txt2img":  ("POST", "/v1/generation/text-to-image"),
+            "upscale-vary": ("POST", "/v1/generation/image-upscale-vary"), #multipart/form-data
+            "inpaint-outpaint": ("POST", "/v1/generation/image-inpaint-outpaint"), #multipart/form-data
+            "img2img":  ("POST", "/v1/generation/image-prompt"), #multipart/form-data
             "describe": ("POST", "/v1/tools/describe-image"), #multipart/form-data
-            "models": ("GET", "/v1/engines/all-models"), 
-            "models-refresh": ("POST", "/v1/engines/refresh-models"), #Deprecated! Features are merged into all-models endpoint. This endpoint will be removed in next releases!
-            "styles": ("GET", "/v1/engines/styles") 
+            ### Default
+            "stop": ("POST", "/v1/generation/stop"),
+            ### GenerateV2
+            "txt2img-ip": ("POST", "/v2/generation/text-to-image-with-ip"),
+            "upscale-vary2": ("POST", "/v2/generation/image-upscale-vary"),
+            "inpaint-outpaint2": ("POST", "/v2/generation/image-inpaint-outpaint"),
+            "img2img2":  ("POST", "/v2/generation/image-prompt"),
         },
         "timeout": 300
     }
@@ -75,7 +76,7 @@ def run_inference(params):
         result = inpaint_preset(params)
         if result is not True:
             raise ValueError("inpaint_preset task failed: " + result)
-
+        
     # You can send the input_image, input_mask, and cn_images as PNG: binary encoded into base64 string OR as url string
     input_imgs = {'input_image':None, 'input_mask':None, 'cn_img1':None, 'cn_img2':None, 'cn_img3':None, 'cn_img4':None, 'image_prompts':[None,None,None,None], 'image':None}
     
@@ -99,7 +100,9 @@ def run_inference(params):
                 print("Image conversion task failed: ", e)
                 return e
     
-    # --- Send requests to the Fooocus-API ---       
+    ''' ----------------------------
+    Send requests to the Fooocus-API
+    ---------------------------- '''
     if api_verb == "GET":
         response = sd_session.get(url='%s%s' % (config["baseurl"], api_path), timeout=config["timeout"])
 
@@ -130,8 +133,7 @@ def run_inference(params):
             except Exception as e:
                 print("multipart/form-data task failed: ", e)
                 return e
-        # If the final request should be application/json. Send the original request data
-        else:
+        else: # If the final request should be application/json. Send the original request data
             # Convert the processed binary image back to url-safe-base64
             for key, value in input_imgs.items():
                 if value is not None:
@@ -153,16 +155,20 @@ def run_inference(params):
     else:
         return response.text
 
-def preview_stream(json, event):
+def preview_stream(jsn, event):
     try:
         job_finished = False
+        api_name = event["input"].get("api_name")
+        headers = event["input"].get('preview_headers', {})
+        if api_name in ["upscale-vary", "inpaint-outpaint", "img2img", "describe"]:
+            if headers != {}: headers = json.loads(headers)
         while job_finished is False:
-            preview = sd_session.get('http://127.0.0.1:8888/v1/generation/query-job', params={"job_id":json["job_id"], "require_step_preview": "true"}).json()
-            requests.post(event["input"]["preview_url"], json=preview, headers=event["input"].get('preview_headers', ''))
+            preview = sd_session.get('http://127.0.0.1:8888/v1/generation/query-job', params={"job_id":jsn["job_id"], "require_step_preview": "true"}).json()
+            requests.post(event["input"]["preview_url"], json=preview, headers=headers)
             if(preview["job_stage"] == "SUCCESS" or preview["job_stage"] == "ERROR"):
                 job_finished = True
                 return
-            time.sleep(event["input"].get('preview_interval', 1))
+            time.sleep(int(event["input"].get('preview_interval', 1)))
     except Exception as e:
         print("async preview task failed: ", e)
         return e
@@ -180,49 +186,38 @@ def clearOutput():
 
 def inpaint_preset(params):
     option = params.get("inpaint_preset")
-    multipart = False
-    if params["api_name"] in ["upscale-vary", "inpaint-outpaint", "img2img", "describe"]: multipart = True
-    if "advanced_params" not in params: params["advanced_params"] = "{}" if multipart is True else {}
-    if multipart is True: params["advanced_params"] = json.loads(params["advanced_params"])
-    if "inpaint_additional_prompt" not in params: 
-        return "inpaint_additional_prompt parameter not found. Be sure to write there what you want to inpaint or improve"
-    if option == "Improve Detail":
-        params["advanced_params"]["inpaint_disable_initial_latent"] = False
-        params["advanced_params"]["inpaint_engine"] = "None"
-        params["advanced_params"]["inpaint_strength"] = 0.5
-        params["advanced_params"]["inpaint_respective_field"] = 0.0
-    elif option == "Modify Content": 
-        params["advanced_params"]["inpaint_disable_initial_latent"] = True
-        params["advanced_params"]["inpaint_engine"] = "v2.6"
-        params["advanced_params"]["inpaint_strength"] = 1.0
-        params["advanced_params"]["inpaint_respective_field"] = 0.0
-    elif option == "Inpaint or Outpaint": 
-        params["advanced_params"]["inpaint_disable_initial_latent"] = True
-        params["advanced_params"]["inpaint_engine"] = "v2.6"
-        params["advanced_params"]["inpaint_strength"] = 1.0
-        params["advanced_params"]["inpaint_respective_field"] = 0.0  
-    else: 
-        return "Preset not found. Be sure to use exactly one of: 'Improve Detail', 'Modify Content' or 'Inpaint or Outpaint'"
-    if multipart is True: params["advanced_params"] = json.dumps(params["advanced_params"])
+    api_name = params.get("api_name")
+    advanced_params = params.get("advanced_params", {})
+    
+    if api_name in ["upscale-vary", "inpaint-outpaint", "img2img", "describe"]: multipart = True
+    else: multipart = False
+    if "inpaint_additional_prompt" not in params: return "inpaint_additional_prompt parameter not found. Be sure to write there what you want to inpaint or improve"
+    
+    if option == "Improve Detail": advanced_params.update({"inpaint_disable_initial_latent": False, "inpaint_engine": "None", "inpaint_strength": 0.5, "inpaint_respective_field": 0.0})
+    elif option in ["Modify Content", "Inpaint or Outpaint"]: advanced_params.update({"inpaint_disable_initial_latent": True, "inpaint_engine": "v2.6", "inpaint_strength": 1.0, "inpaint_respective_field": 0.0})
+    else: return "Preset not found. Be sure to use exactly one of: 'Improve Detail', 'Modify Content' or 'Inpaint or Outpaint'"
+    
+    if multipart:
+        advanced_params = {k: str(v).lower() for k, v in advanced_params.items()}
+        params["advanced_params"] = json.dumps(advanced_params, indent=None).replace('"', "'")
+    else: params["advanced_params"] = advanced_params
     return True
 
 # ---------------------------------------------------------------------------- #
 #                                RunPod Handler                                #
 # ---------------------------------------------------------------------------- #
 def handler(event):
-    '''
-    This is the handler function that will be called by the serverless.
-    '''
-    # Check for clear outputs option (defaults to True, send "clear_output":false in your generation params to keep the images stored on the network volume.)
-    # This also works on standalone but does not make much sense since storage is local for the individual workers and is deleted once they go down anyway.
+    ''' This is the handler function that will be called by the serverless. '''
+    # Check for clear outputs option (defaults to True, send "clear_output":false in your payload to keep the images stored on the network volume.)
+    # Also works on standalone but does not make much sense since the workers are stateless.
     clear_output = event["input"].get("clear_output", True)
-    if clear_output:
+    if clear_output is True or clear_output.lower() == "true":
         clearOutput()
 
     # Main process
     json = run_inference(event["input"])
     
-    # Check for async preview streaming (turn this on by adding "async_process":true in your generation params and include custom "preview_url":"https://your.app/endpoint")
+    # Check for async preview streaming (turn on by adding "async_process":true in your generation params and include custom "preview_url":"https://your.app/endpoint")
     if 'preview_url' in event["input"] and 'job_step_preview' in json:
         preview_stream(json, event)
     
