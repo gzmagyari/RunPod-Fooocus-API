@@ -237,6 +237,8 @@ queryjob =
     }
 }
 // returns: {"delayTime": 0, "executionTime": 0,"id": "runpod-job-id","output": {"job_id": "fooocus-job-id", "job_type": "Text to Image", "job_stage": "WAITING", "job_progress": 0, "job_status": "string", "job_step_preview": "string", "job_result": [{"base64": "string","url": "string","seed": "string","finish_reason": "SUCCESS"}]},"status": "COMPLETED"}
+// NOTE: This endpoint, while working, does not make sense to be used on serverless. RunPod does not know which worker to send this request into.
+// YOU CAN USE ASYNC PREVIEW SENDING INSTEAD, SEE SECTION 3: CUSTOM PARAMS
 
 // ----------------
 // **************************
@@ -248,6 +250,7 @@ jobqueue =
     }
 }
 // returns: {"delayTime": 0, "executionTime": 0,"id": "runpod-job-id","output": {"finished_size": 99,"last_job_id": "last-fooocus-job-id", "running_size": 0},"status": "COMPLETED"}
+// NOTE: This endpoint, while working, does not make sense to be used on serverless. RunPod does not know which worker to send this request into.
 
 // ----------------
 // **************************
@@ -259,6 +262,7 @@ jobhistory =
     }
 }
 // returns: {"delayTime": 0, "executionTime": 0, "id":"runpod-job-id", 'output':{"queue": [],"history": []}, "status":"COMPLETED"}
+// NOTE: This endpoint, while working, does not make sense to be used on serverless. RunPod does not know which worker to send this request into.
 
 // ----------------
 // **************************
@@ -270,6 +274,7 @@ stop =
     }
 }
 // returns: {"delayTime": 0, "executionTime": 0, "id":"runpod-job-id", 'output':{"msg": "success"}, "status":"COMPLETED"}
+// NOTE: This endpoint, while working, does not make sense to be used on serverless. RunPod does not know which worker to send this request into.
 
 // ----------------
 // **************************
@@ -293,18 +298,6 @@ models =
         "api_name":"models"
     }
 }
-// returns: {"delayTime": 0, "executionTime": 0, "id":"runpod-job-id", 'output':{"model_filenames": ["string"],"lora_filenames": ["string"]}, "status":"COMPLETED"}
-
-// ----------------
-// **************************
-models_refresh =
-// **************************
-{
-    "input":{
-        "api_name":"models-refresh",
-    }
-}
-// WARNING! This endpoint is deprecated! Features are merged into all-models endpoint. This endpoint will be removed in next releases!
 // returns: {"delayTime": 0, "executionTime": 0, "id":"runpod-job-id", 'output':{"model_filenames": ["string"],"lora_filenames": ["string"]}, "status":"COMPLETED"}
 
 // ----------------
@@ -334,8 +327,9 @@ v1 =
         "outpaint_selections":"Top,Bottom,Left,Right", // This param is special. It's expecting "Python Literals seperated by commas". That's why it's not a stringified array in this case.
         "outpaint_distance_left": "-1",
         "require_base64": "true",
-        "style_selections": "[\"Fooocus V2\", \"Fooocus Enhance\", \"Fooocus Sharp\"]",
-        "advanced_params": "{\"adaptive_cfg\":7}"
+        "style_selections": "['Fooocus V2', 'Fooocus Enhance', 'Fooocus Sharp']",
+        "advanced_params": "{'adaptive_cfg':'7'}",
+        "preview_headers": "{\"Cookie\":\"foo=bar\"}"
     }
 }
 
@@ -351,19 +345,25 @@ v2 =
         "style_selections": ["Fooocus V2", "Fooocus Enhance", "Fooocus Sharp"],
         "advanced_params": {
             "adaptive_cfg":7
-        }
+        },
+        "preview_headers": {"Cookie":"foo=bar"}
     }
 }
+
+// To see the full Fooocus-API params documentation, please refer to:
+// https://github.com/mrhan1993/Fooocus-API/blob/a50ed2f7db116f49e168c634ce4fa639ca42dda7/docs/api_doc_en.md
+
 
 // ----------------------------------------------------
 // 3: Custom params
 // ----------------------------------------------------
-// To overcome some differences which arise from running Fooocus on RunPod serverless
+// To overcome some differences which arise from running this on RunPod serverless
 // we have to add several custom parameters to our payloads that are not part of the original Fooocus-API
 
 "api_name" // "string" - Chooses what Fooocus-API endpoint we're actually calling
 "preview_url" // "string" - If you use Fooocus-API "async_process:true" and want to get a stream of preview images, you should add your app's url endpoint where POST requests with previews will arrive
     "preview_interval" // "number" - Optional param when using preview_url, sets how often in seconds the preview is checked and sent to your app. If not set defaults to 1
     "preview_headers" // "object" - Optional param when using preview_url, sets custom headers to send with the preview request (for tokens, auth etc.)
+        // preview_headers should be json containing header and it's value, in V1 endpoints format them like this: "{\"Cookie\":\"foo=bar\"}"
 "inpaint_preset" // "string" - Custom fix for missing "Inpaint Method" selection in Fooocus-API. Can be one of: 'Improve Detail', 'Modify Content' or 'Inpaint or Outpaint'
 "clear_output" // "boolean" - Chooses if you want to keep the image files on network volume/worker local storage or not. Can be true or false. Default is true (not saving image files)

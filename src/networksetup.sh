@@ -1,8 +1,7 @@
 #!/bin/bash
 # Config
-VERSION="0.3.33"
-API_SHA="1c6eb9822564e43585591d137c4c117c5f100694"
-FOOOCUS_SHA="e9bc5e50c6a9e9502e822d308cb370883c4ef202"
+VERSION="0.4.0.6"
+API_SHA="a50ed2f7db116f49e168c634ce4fa639ca42dda7"
 VOLUME_PATH="/workspace"
 VOLUME_SIZE="20GB"
 
@@ -14,7 +13,6 @@ if [ ! -d "$VOLUME_PATH" ]; then
 fi
 
 . /clone.sh /app https://github.com/mrhan1993/Fooocus-API.git $API_SHA
-. /clone.sh /app/repositories/Fooocus https://github.com/lllyasviel/Fooocus.git $FOOOCUS_SHA
 
 echo "Downloading models..."
 # Download all models (you might not need all and could save some network space depending on what endpoints and settings you'll use)
@@ -41,11 +39,10 @@ curl -o /app/repositories/Fooocus/models/controlnet/parsing_parsenet.pth -L http
 curl -o /app/repositories/Fooocus/models/clip_vision/model_base_caption_capfilt_large.pth -L https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/model_base_caption_capfilt_large.pth?download=true && echo "21/21"
 
 # Replace Fooocus Configs
-cp -r /config.txt /app/repositories/Fooocus/config.txt
 cp -r /default.json /app/repositories/Fooocus/presets/default.json
 
-echo "Transfering everything into the network volume..."
 # Transfer everything into the network volume
+echo "Transfering everything into the network volume..."
 rm -r $VOLUME_PATH/* 2>/dev/null || true
 cp -r /app/* $VOLUME_PATH/
 # Check if successfull
