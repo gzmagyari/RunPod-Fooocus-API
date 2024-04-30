@@ -14,13 +14,15 @@ RUN . /clone.sh /workspace https://github.com/mrhan1993/Fooocus-API.git a50ed2f7
 FROM alpine:3.19.1 as models
 RUN apk add --no-cache wget
 
-#RUN wget -q -O /workspace/repositories/Fooocus/models/checkpoints/juggernautXL_version6Rundiffusion.safetensors https://huggingface.co/lllyasviel/fav_models/resolve/main/fav/juggernautXL_version6Rundiffusion.safetensors
+## Use either RUN wget for download or COPY for local files on your disk ##
+#RUN wget -P /workspace/repositories/Fooocus/models/vae_approx/ -O xlvaeapp.pth https://huggingface.co/3WaD/RunPod-Fooocus-API/blob/main/v0.3.30/xlvaeapp.pth?download=true
 #COPY your/path_relative_to_dockerfile/model.safetensors /workspace/repositories/Fooocus/models/checkpoints/destinationmodelname.safetensors
 
-# These are all the models Fooocus needs by default (you can download them also from https://huggingface.co/3WaD/RunPod-Fooocus-API/tree/main)
+# These are all the models Fooocus needs by default (you can download them also from https://huggingface.co/3WaD/RunPod-Fooocus-API/tree/main, civit.ai and Fooocus/Stability.ai huggingface)
 COPY models/juggernautXL_v8Rundiffusion.safetensors /workspace/repositories/Fooocus/models/checkpoints/juggernautXL_v8Rundiffusion.safetensors
 COPY models/sd_xl_offset_example-lora_1.0.safetensors /workspace/repositories/Fooocus/models/loras/sd_xl_offset_example-lora_1.0.safetensors
 COPY models/sdxl_lcm_lora.safetensors /workspace/repositories/Fooocus/models/loras/sdxl_lcm_lora.safetensors
+COPY models/sdxl_lightning_4step_lora.safetensors /workspace/repositories/Fooocus/models/loras/sdxl_lightning_4step_lora.safetensors
 COPY models/fooocus_inpaint_head.pth /workspace/repositories/Fooocus/models/inpaint/fooocus_inpaint_head.pth
 COPY models/inpaint.fooocus.patch /workspace/repositories/Fooocus/models/inpaint/inpaint.fooocus.patch
 COPY models/inpaint_v25.fooocus.patch /workspace/repositories/Fooocus/models/inpaint/inpaint_v25.fooocus.patch
@@ -37,7 +39,9 @@ COPY models/vaeapp_sd15.pt /workspace/repositories/Fooocus/models/vae_approx/vae
 COPY models/xl-to-v1_interposer-v3.1.safetensors /workspace/repositories/Fooocus/models/vae_approx/xl-to-v1_interposer-v3.1.safetensors
 COPY models/fooocus_expansion.bin /workspace/repositories/Fooocus/models/prompt_expansion/fooocus_expansion/pytorch_model.bin
 COPY models/detection_Resnet50_Final.pth /workspace/repositories/Fooocus/models/controlnet/detection_Resnet50_Final.pth
+COPY models/detection_mobilenet0.25_Final.pth /workspace/repositories/Fooocus/models/controlnet/detection_mobilenet0.25_Final.pth
 COPY models/parsing_parsenet.pth /workspace/repositories/Fooocus/models/controlnet/parsing_parsenet.pth
+COPY models/parsing_bisenet.pth /workspace/repositories/Fooocus/models/controlnet/parsing_bisenet.pth
 COPY models/model_base_caption_capfilt_large.pth /workspace/repositories/Fooocus/models/clip_vision/model_base_caption_capfilt_large.pth
 
 # ---------------------------------------------------------------------------- #
