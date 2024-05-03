@@ -191,7 +191,6 @@ def inpaint_preset(params):
     
     if api_name in ["upscale-vary", "inpaint-outpaint", "img2img", "describe"]: multipart = True
     else: multipart = False
-    if "inpaint_additional_prompt" not in params: return "inpaint_additional_prompt parameter not found. Be sure to write there what you want to inpaint or improve"
     
     if option == "Improve Detail": advanced_params.update({"inpaint_disable_initial_latent": False, "inpaint_engine": "None", "inpaint_strength": 0.5, "inpaint_respective_field": 0.0})
     elif option in ["Modify Content", "Inpaint or Outpaint"]: advanced_params.update({"inpaint_disable_initial_latent": True, "inpaint_engine": "v2.6", "inpaint_strength": 1.0, "inpaint_respective_field": 0.0})
