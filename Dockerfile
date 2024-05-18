@@ -8,17 +8,47 @@ COPY builder/clone.sh /clone.sh
 # Fooocus-API
 RUN . /clone.sh /workspace https://github.com/mrhan1993/Fooocus-API.git a50ed2f7db116f49e168c634ce4fa639ca42dda7
 
-#                       Separate model stage                           #
-# -------------------------------------------------------------------- #
-# You can use links with RUN wget or COPY to load files from your PC
-FROM alpine:3.19.1 as models
-RUN apk add --no-cache wget
+# ---------------------------------------------------------------------------- #
+#                        Part 2: Build the final image                         #
+# ---------------------------------------------------------------------------- #
+FROM python:3.10.14-slim as build_final_image
+ENV DEBIAN_FRONTEND=noninteractive \
+    PIP_PREFER_BINARY=1 \
+    PYTHONUNBUFFERED=1
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-## Use either RUN wget for download or COPY for local files on your disk ##
-#RUN wget -P /workspace/repositories/Fooocus/models/vae_approx/ -O xlvaeapp.pth https://huggingface.co/3WaD/RunPod-Fooocus-API/blob/main/v0.3.30/xlvaeapp.pth?download=true
-#COPY your/path_relative_to_dockerfile/model.safetensors /workspace/repositories/Fooocus/models/checkpoints/destinationmodelname.safetensors
+# Update and upgrade the system packages
+RUN apt-get update && \
+    apt install -y \
+    fonts-dejavu-core rsync git jq moreutils aria2 wget libgoogle-perftools-dev procps libgl1 libglib2.0-0 && \
+    apt-get autoremove -y && rm -rf /var/lib/apt/lists/* && apt-get clean -y
 
-# These are all the models Fooocus needs by default (you can download them also from https://huggingface.co/3WaD/RunPod-Fooocus-API/tree/main, civit.ai and Fooocus/Stability.ai huggingface)
+RUN --mount=type=cache,target=/cache --mount=type=cache,target=/root/.cache/pip \
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# Copy downloaded data to the final image
+COPY --from=download /workspace/ /workspace/
+# Change Fooocus configs
+COPY src/default.json /workspace/repositories/Fooocus/presets/default.json
+
+# Install Python dependencies
+COPY builder/requirements.txt /requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip && \
+    pip install --upgrade -r /requirements.txt --no-cache-dir && \
+    rm /requirements.txt
+
+ADD src .
+
+# Cleanup
+RUN apt-get autoremove -y && \
+    apt-get clean -y && \
+    rm -rf /var/lib/apt/lists/*
+
+#                        Upload or download models                             #
+# ---------------------------------------------------------------------------- #
+# Use either RUN wget for download or COPY for local files on your disk
+# These are all the models Fooocus needs by default (you can also download them from https://huggingface.co/3WaD/RunPod-Fooocus-API/tree/main, civit.ai and Fooocus/Stability.ai huggingface)
 COPY models/juggernautXL_v8Rundiffusion.safetensors /workspace/repositories/Fooocus/models/checkpoints/juggernautXL_v8Rundiffusion.safetensors
 COPY models/sd_xl_offset_example-lora_1.0.safetensors /workspace/repositories/Fooocus/models/loras/sd_xl_offset_example-lora_1.0.safetensors
 COPY models/sdxl_lcm_lora.safetensors /workspace/repositories/Fooocus/models/loras/sdxl_lcm_lora.safetensors
@@ -44,43 +74,30 @@ COPY models/parsing_parsenet.pth /workspace/repositories/Fooocus/models/controln
 COPY models/parsing_bisenet.pth /workspace/repositories/Fooocus/models/controlnet/parsing_bisenet.pth
 COPY models/model_base_caption_capfilt_large.pth /workspace/repositories/Fooocus/models/clip_vision/model_base_caption_capfilt_large.pth
 
-# ---------------------------------------------------------------------------- #
-#                        Part 2: Build the final image                         #
-# ---------------------------------------------------------------------------- #
-FROM python:3.10.14-slim as build_final_image
-ENV DEBIAN_FRONTEND=noninteractive \
-    PIP_PREFER_BINARY=1 \
-    PYTHONUNBUFFERED=1
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-
-# Update and upgrade the system packages
-RUN apt-get update && \
-    apt install -y \
-    fonts-dejavu-core rsync git jq moreutils aria2 wget libgoogle-perftools-dev procps libgl1 libglib2.0-0 && \
-    apt-get autoremove -y && rm -rf /var/lib/apt/lists/* && apt-get clean -y
-
-RUN --mount=type=cache,target=/cache --mount=type=cache,target=/root/.cache/pip \
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-
-# Copy downloaded data to the final image
-COPY --from=download /workspace/ /workspace/
-COPY --from=models /workspace/repositories/Fooocus/models /workspace/repositories/Fooocus/models
-# Change Fooocus configs
-COPY src/default.json /workspace/repositories/Fooocus/presets/default.json
-
-# Install Python dependencies
-COPY builder/requirements.txt /requirements.txt
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --upgrade pip && \
-    pip install --upgrade -r /requirements.txt --no-cache-dir && \
-    rm /requirements.txt
-
-ADD src .
-
-# Cleanup
-RUN apt-get autoremove -y && \
-    apt-get clean -y && \
-    rm -rf /var/lib/apt/lists/*
+#RUN wget -O /workspace/repositories/Fooocus/models/checkpoints/juggernautXL_v8Rundiffusion.safetensors https://huggingface.co/lllyasviel/fav_models/resolve/main/fav/juggernautXL_v8Rundiffusion.safetensors?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/loras/sd_xl_offset_example-lora_1.0.safetensors https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_offset_example-lora_1.0.safetensors?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/loras/sdxl_lcm_lora.safetensors https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/sdxl_lcm_lora.safetensors?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/loras/sdxl_lightning_4step_lora.safetensors https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/sdxl_lightning_4step_lora.safetensors?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/inpaint/fooocus_inpaint_head.pth https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/fooocus_inpaint_head.pth?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/inpaint/inpaint.fooocus.patch https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/inpaint.fooocus.patch?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/inpaint/inpaint_v25.fooocus.patch https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/inpaint_v25.fooocus.patch?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/inpaint/inpaint_v26.fooocus.patch https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/inpaint_v26.fooocus.patch?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/controlnet/control-lora-canny-rank128.safetensors https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/control-lora-canny-rank128.safetensors?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/controlnet/fooocus_xl_cpds_128.safetensors https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/fooocus_xl_cpds_128.safetensors?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/controlnet/fooocus_ip_negative.safetensors https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/fooocus_ip_negative.safetensors?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/controlnet/ip-adapter-plus_sdxl_vit-h.bin https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/ip-adapter-plus_sdxl_vit-h.bin?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/controlnet/ip-adapter-plus-face_sdxl_vit-h.bin https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/ip-adapter-plus-face_sdxl_vit-h.bin?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/upscale_models/fooocus_upscaler_s409985e5.bin https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/fooocus_upscaler_s409985e5.bin?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/clip_vision/clip_vision_vit_h.safetensors https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/clip_vision_vit_h.safetensors?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/vae_approx/xlvaeapp.pth https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/xlvaeapp.pth?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/vae_approx/vaeapp_sd15.pth https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/vaeapp_sd15.pt?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/vae_approx/xl-to-v1_interposer-v3.1.safetensors https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/xl-to-v1_interposer-v3.1.safetensors?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/prompt_expansion/fooocus_expansion/pytorch_model.bin https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/fooocus_expansion.bin?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/controlnet/detection_Resnet50_Final.pth https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/detection_Resnet50_Final.pth?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/controlnet/detection_mobilenet0.25_Final.pth https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/detection_mobilenet0.25_Final.pth?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/controlnet/parsing_parsenet.pth https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/parsing_parsenet.pth?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/controlnet/parsing_bisenet.pth https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/parsing_bisenet.pth?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/clip_vision/model_base_caption_capfilt_large.pth https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/model_base_caption_capfilt_large.pth?download=true
 
 RUN chmod +x /start.sh
 CMD /start.sh
