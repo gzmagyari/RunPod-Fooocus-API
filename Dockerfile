@@ -1,12 +1,12 @@
 # ---------------------------------------------------------------------------- #
 #                         Part 1: Download the files                           #
 # ---------------------------------------------------------------------------- #
-FROM alpine/git:2.43.0 as download
+FROM alpine/git:2.45.2 as download
 COPY builder/clone.sh /clone.sh
 
 # Clone the repos
 # Fooocus-API
-RUN . /clone.sh /workspace https://github.com/mrhan1993/Fooocus-API.git a50ed2f7db116f49e168c634ce4fa639ca42dda7
+RUN . /clone.sh /workspace https://github.com/mrhan1993/Fooocus-API.git 966853794c527f5a08dcc190777022fe6e2e782a
 
 # ---------------------------------------------------------------------------- #
 #                        Part 2: Build the final image                         #
@@ -24,7 +24,7 @@ RUN apt-get update && \
     apt-get autoremove -y && rm -rf /var/lib/apt/lists/* && apt-get clean -y
 
 RUN --mount=type=cache,target=/cache --mount=type=cache,target=/root/.cache/pip \
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
 # Copy downloaded data to the final image
 COPY --from=download /workspace/ /workspace/
@@ -51,6 +51,7 @@ RUN apt-get autoremove -y && \
 # These are all the models Fooocus needs by default (you can also download them from https://huggingface.co/3WaD/RunPod-Fooocus-API/tree/main, civit.ai and Fooocus/Stability.ai huggingface)
 COPY models/juggernautXL_v8Rundiffusion.safetensors /workspace/repositories/Fooocus/models/checkpoints/juggernautXL_v8Rundiffusion.safetensors
 COPY models/sd_xl_offset_example-lora_1.0.safetensors /workspace/repositories/Fooocus/models/loras/sd_xl_offset_example-lora_1.0.safetensors
+
 COPY models/sdxl_lcm_lora.safetensors /workspace/repositories/Fooocus/models/loras/sdxl_lcm_lora.safetensors
 COPY models/sdxl_lightning_4step_lora.safetensors /workspace/repositories/Fooocus/models/loras/sdxl_lightning_4step_lora.safetensors
 COPY models/fooocus_inpaint_head.pth /workspace/repositories/Fooocus/models/inpaint/fooocus_inpaint_head.pth
@@ -73,9 +74,12 @@ COPY models/detection_mobilenet0.25_Final.pth /workspace/repositories/Fooocus/mo
 COPY models/parsing_parsenet.pth /workspace/repositories/Fooocus/models/controlnet/parsing_parsenet.pth
 COPY models/parsing_bisenet.pth /workspace/repositories/Fooocus/models/controlnet/parsing_bisenet.pth
 COPY models/model_base_caption_capfilt_large.pth /workspace/repositories/Fooocus/models/clip_vision/model_base_caption_capfilt_large.pth
+COPY models/sdxl_hyper_sd_4step_lora.safetensors /workspace/repositories/Fooocus/models/loras/sdxl_hyper_sd_4step_lora.safetensors
+COPY models/stable-diffusion-safety-checker.bin /workspace/repositories/Fooocus/models/safety_checker/stable-diffusion-safety-checker.bin
 
 #RUN wget -O /workspace/repositories/Fooocus/models/checkpoints/juggernautXL_v8Rundiffusion.safetensors https://huggingface.co/lllyasviel/fav_models/resolve/main/fav/juggernautXL_v8Rundiffusion.safetensors?download=true
 #RUN wget -O /workspace/repositories/Fooocus/models/loras/sd_xl_offset_example-lora_1.0.safetensors https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_offset_example-lora_1.0.safetensors?download=true
+
 #RUN wget -O /workspace/repositories/Fooocus/models/loras/sdxl_lcm_lora.safetensors https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/sdxl_lcm_lora.safetensors?download=true
 #RUN wget -O /workspace/repositories/Fooocus/models/loras/sdxl_lightning_4step_lora.safetensors https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/sdxl_lightning_4step_lora.safetensors?download=true
 #RUN wget -O /workspace/repositories/Fooocus/models/inpaint/fooocus_inpaint_head.pth https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/fooocus_inpaint_head.pth?download=true
@@ -98,6 +102,8 @@ COPY models/model_base_caption_capfilt_large.pth /workspace/repositories/Fooocus
 #RUN wget -O /workspace/repositories/Fooocus/models/controlnet/parsing_parsenet.pth https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/parsing_parsenet.pth?download=true
 #RUN wget -O /workspace/repositories/Fooocus/models/controlnet/parsing_bisenet.pth https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/parsing_bisenet.pth?download=true
 #RUN wget -O /workspace/repositories/Fooocus/models/clip_vision/model_base_caption_capfilt_large.pth https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/model_base_caption_capfilt_large.pth?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/loras/sdxl_hyper_sd_4step_lora.safetensors https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/sdxl_hyper_sd_4step_lora.safetensors?download=true
+#RUN wget -O /workspace/repositories/Fooocus/models/safety_checker/stable-diffusion-safety-checker.bin https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/stable-diffusion-safety-checker.bin?download=true
 
 RUN chmod +x /start.sh
 CMD /start.sh

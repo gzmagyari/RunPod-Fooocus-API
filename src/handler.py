@@ -97,8 +97,9 @@ def run_inference(params):
                 else:
                     input_imgs[key] = process_img(params[key])
             except Exception as e:
-                print("Image conversion task failed: ", e)
-                return e
+                error_message = str(e)
+                print("Image conversion task failed: ", error_message)
+                return {"error": error_message}
     
     ''' ----------------------------
     Send requests to the Fooocus-API
@@ -131,8 +132,9 @@ def run_inference(params):
                     headers=headers,
                     timeout=config["timeout"])
             except Exception as e:
-                print("multipart/form-data task failed: ", e)
-                return e
+                error_message = str(e)
+                print("multipart/form-data task failed: ", error_message)
+                return {"error": error_message}
         else: # If the final request should be application/json. Send the original request data
             # Convert the processed binary image back to url-safe-base64
             for key, value in input_imgs.items():
@@ -170,8 +172,9 @@ def preview_stream(jsn, event):
                 return
             time.sleep(int(event["input"].get('preview_interval', 1)))
     except Exception as e:
-        print("async preview task failed: ", e)
-        return e
+        error_message = str(e)
+        print("async preview task failed: ", error_message)
+        return {"error": error_message}
     
 def clearOutput():
     try:
@@ -181,8 +184,9 @@ def clearOutput():
         shutil.rmtree('/workspace/repositories/Fooocus/outputs')
         os.makedirs('/workspace/repositories/Fooocus/outputs')
     except Exception as e:
-        print("clear outputs task failed: ", e)
-        return e
+        error_message = str(e)
+        print("clear outputs task failed: ", error_message)
+        return {"error": error_message}
 
 def inpaint_preset(params):
     option = params.get("inpaint_preset")
