@@ -1,4 +1,4 @@
-FROM alpine:3.19.1
+FROM alpine:3.20.1
 RUN apk add --no-cache git curl
 
 COPY builder/clone.sh /clone.sh
