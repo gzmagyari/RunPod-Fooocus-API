@@ -49,7 +49,7 @@ RUN apt-get autoremove -y && \
 # ---------------------------------------------------------------------------- #
 # Use either RUN wget for download or COPY for local files on your disk
 # These are all the models Fooocus needs by default (you can also download them from https://huggingface.co/3WaD/RunPod-Fooocus-API/tree/main, civit.ai and Fooocus/Stability.ai huggingface)
-COPY models/juggernautXL_v8Rundiffusion.safetensors /workspace/repositories/Fooocus/models/checkpoints/juggernautXL_v8Rundiffusion.safetensors
+COPY models/pandorasBoxNSFW_v1PussBoots.safetensors /workspace/repositories/Fooocus/models/checkpoints/pandorasBoxNSFW_v1PussBoots.safetensors
 COPY models/sd_xl_offset_example-lora_1.0.safetensors /workspace/repositories/Fooocus/models/loras/sd_xl_offset_example-lora_1.0.safetensors
 
 COPY models/sdxl_lcm_lora.safetensors /workspace/repositories/Fooocus/models/loras/sdxl_lcm_lora.safetensors
