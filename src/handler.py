@@ -15,7 +15,6 @@ sd_session = requests.Session()
 retries = Retry(total=10, backoff_factor=0.1, status_forcelist=[502, 503, 504])
 sd_session.mount('http://', HTTPAdapter(max_retries=retries))
 
-
 # ---------------------------------------------------------------------------- #
 #                               Functions                                      #
 # ---------------------------------------------------------------------------- #
@@ -34,7 +33,7 @@ def wait_for_service(url):
 
 def run_inference(params):
     config = {
-        "baseurl": "http://127.0.0.1:8888",
+        "baseurl": "http://0.0.0.0:8888",  # Changed to 0.0.0.0 to listen on all interfaces
         "api": {
             ### Query
             "home": ("GET", "/"),
@@ -60,7 +59,7 @@ def run_inference(params):
         },
         "timeout": 300
     }
-    # Check if the api_name in the recieved obj is supported
+    # Check if the api_name in the received obj is supported
     api_name = params["api_name"]
     if api_name in config["api"]:
         api_config = config["api"][api_name]
@@ -228,7 +227,7 @@ def handler(event):
     return json
 
 if __name__ == "__main__":
-    wait_for_service(url='http://127.0.0.1:8888/v1/generation/text-to-image')
+    wait_for_service(url='http://0.0.0.0:8888/v1/generation/text-to-image')  # Changed to 0.0.0.0
 
     print("Fooocus API Service is ready. Starting RunPod...")
 
