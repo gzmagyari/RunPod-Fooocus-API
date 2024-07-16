@@ -34,7 +34,7 @@ def wait_for_service(url):
 
 def run_inference(params):
     config = {
-        "baseurl": "http://127.0.0.1:8888",
+        "baseurl": "http://0.0.0.0:8888",
         "api": {
             ### Query
             "home": ("GET", "/"),
