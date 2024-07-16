@@ -107,3 +107,5 @@ COPY models/stable-diffusion-safety-checker.bin /workspace/repositories/Fooocus/
 
 RUN chmod +x /start.sh
 CMD /start.sh
+
+EXPOSE 8888
