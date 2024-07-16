@@ -7,4 +7,4 @@ python main.py --skip-pip --disable-in-browser --always-gpu --disable-offload-fr
 
 echo "Starting RunPod Handler"
 cd /
-python -u /handler.py
+python -u /handler.py --rp_serve_api
