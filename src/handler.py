@@ -34,7 +34,7 @@ def wait_for_service(url):
 
 def run_inference(params):
     config = {
-        "baseurl": "http://0.0.0.0:8000",
+        "baseurl": "http://127.0.0.1:8888",
         "api": {
             ### Query
             "home": ("GET", "/"),
@@ -165,7 +165,7 @@ def preview_stream(jsn, event):
         if api_name in ["upscale-vary", "inpaint-outpaint", "img2img", "describe"]:
             if headers != {}: headers = json.loads(headers)
         while job_finished is False:
-            preview = sd_session.get('http://127.0.0.1:8000/v1/generation/query-job', params={"job_id":jsn["job_id"], "require_step_preview": "true"}).json()
+            preview = sd_session.get('http://127.0.0.1:8888/v1/generation/query-job', params={"job_id":jsn["job_id"], "require_step_preview": "true"}).json()
             requests.post(event["input"]["preview_url"], json=preview, headers=headers)
             if(preview["job_stage"] == "SUCCESS" or preview["job_stage"] == "ERROR"):
                 job_finished = True
@@ -228,7 +228,7 @@ def handler(event):
     return json
 
 if __name__ == "__main__":
-    wait_for_service(url='http://127.0.0.1:8000/v1/generation/text-to-image')
+    wait_for_service(url='http://127.0.0.1:8888/v1/generation/text-to-image')
 
     print("Fooocus API Service is ready. Starting RunPod...")
 
