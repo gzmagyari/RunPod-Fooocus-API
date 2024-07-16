@@ -2,7 +2,9 @@
 ![Static Badge](https://img.shields.io/badge/API_version-0.4.1.0-blue) ![Static Badge](https://img.shields.io/badge/Fooocus_version-2.4.1-blue) ![Static Badge](https://img.shields.io/badge/API_coverage-100%25-vividgreen) ![Static Badge](https://img.shields.io/badge/API_tests-passed-vividgreen)
 
 [Fooocus-API](https://github.com/mrhan1993/Fooocus-API) RunPod serverless worker implementation
-___
+
+---
+
 The repository consists of two branches:
 [NetworkVolume](https://github.com/davefojtik/RunPod-Fooocus-API/tree/NetworkVolume) and [Standalone](https://github.com/davefojtik/RunPod-Fooocus-API/tree/Standalone)
 
@@ -13,13 +15,18 @@ The **Standalone** branch is a ready-to-use docker image with all the files and 
 All prebuilt images can be found here: https://hub.docker.com/r/3wad/runpod-fooocus-api
 
 ## How to send requests
+
 [request_examples.js](https://github.com/davefojtik/RunPod-Fooocus-API/blob/NetworkVolume/docs/request_examples.js) contain example payloads for all endpoints on your serverless worker, regardless of the branch. But don't hesitate to ask if you need more help.
 
 ## Contributors Welcomed
+
 Feel free to make pull requests, fixes, improvements and suggestions to the code. Any cooperation on keeping this repo up-to-date and free of bugs is highly welcomed.
 
 ## Updates
+
 We're not always on the latest version automatically, as there can be breaking changes or major bugs. The updates are being made only after thorough tests by our community of Discord users generating images with the AI agent using this repo as its tool. And only if we see that the new version performs better and more stable.
-___
-> [!NOTE] 
-> *This repo is in no way affiliated with RunPod Inc. All logos and names are owned by the authors. This is an unofficial community implementation*
+
+---
+
+> [!NOTE]
+> _This repo is in no way affiliated with RunPod Inc. All logos and names are owned by the authors. This is an unofficial community implementation_
