@@ -105,7 +105,8 @@ COPY models/stable-diffusion-safety-checker.bin /workspace/repositories/Fooocus/
 #RUN wget -O /workspace/repositories/Fooocus/models/loras/sdxl_hyper_sd_4step_lora.safetensors https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/sdxl_hyper_sd_4step_lora.safetensors?download=true
 #RUN wget -O /workspace/repositories/Fooocus/models/safety_checker/stable-diffusion-safety-checker.bin https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/stable-diffusion-safety-checker.bin?download=true
 
+EXPOSE 8000
+
 RUN chmod +x /start.sh
 CMD /start.sh
 
-EXPOSE 8000
