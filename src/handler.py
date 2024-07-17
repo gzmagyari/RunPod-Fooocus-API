@@ -33,7 +33,7 @@ def wait_for_service(url):
 
 def run_inference(params):
     config = {
-        "baseurl": "http://0.0.0.0:8888",  # Changed to 0.0.0.0 to listen on all interfaces
+        "baseurl": "http://127.0.0.1:8888",
         "api": {
             ### Query
             "home": ("GET", "/"),
@@ -227,7 +227,7 @@ def handler(event):
     return json
 
 if __name__ == "__main__":
-    wait_for_service(url='http://0.0.0.0:8888/v1/generation/text-to-image')  # Changed to 0.0.0.0
+    wait_for_service(url='http://127.0.0.1:8888/v1/generation/text-to-image')
 
     print("Fooocus API Service is ready. Starting RunPod...")
 
