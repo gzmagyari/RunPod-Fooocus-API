@@ -16,12 +16,7 @@ fi
 
 # Check if the image is already tagged
 IMAGE_TAG="gzmagyari/fooocus-api-pb:latest"
-if docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "$IMAGE_TAG"; then
-    echo "Image already tagged as $IMAGE_TAG"
-else
-    echo "Tagging image as $IMAGE_TAG"
-    docker tag fooocus-api-pb $IMAGE_TAG
-fi
+docker tag fooocus-api-pb $IMAGE_TAG
 
 # Push the Docker image to Docker Hub
 docker push $IMAGE_TAG
