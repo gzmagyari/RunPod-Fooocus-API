@@ -34,3 +34,7 @@ sqlalchemy
 packaging
 rich
 chardet
+gradio==3.41.2
+httpx==0.24.1
+sse_starlette
+httpx
