@@ -3,7 +3,7 @@ echo "Worker Initiated"
 
 echo "Starting Fooocus API"
 cd /workspace
-python launch.py --disable-in-browser --nowebui --always-gpu --share --disable-offload-from-vram --port 8888 & # You can add more Fooocus flags here to optimize performance for your workers, see https://github.com/lllyasviel/Fooocus?tab=readme-ov-file#all-cmd-flags
+python launch.py --disable-in-browser --nowebui --always-gpu --disable-offload-from-vram --port 8888 & # You can add more Fooocus flags here to optimize performance for your workers, see https://github.com/lllyasviel/Fooocus?tab=readme-ov-file#all-cmd-flags
 
 echo "Starting RunPod Handler"
 cd /
