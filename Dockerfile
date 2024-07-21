@@ -6,7 +6,8 @@ COPY builder/clone.sh /clone.sh
 
 # Clone the repos
 # Fooocus-API
-RUN . /clone.sh /workspace https://github.com/mrhan1993/Fooocus-API.git 966853794c527f5a08dcc190777022fe6e2e782a
+#RUN . /clone.sh /workspace https://github.com/mrhan1993/Fooocus-API.git 966853794c527f5a08dcc190777022fe6e2e782a
+RUN . /clone.sh /workspace https://github.com/mrhan1993/FooocusAPI.git 2c19778064a36848cd5309894fcd4076c6c7b249
 
 # ---------------------------------------------------------------------------- #
 #                        Part 2: Build the final image                         #
