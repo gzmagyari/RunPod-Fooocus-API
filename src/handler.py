@@ -180,8 +180,8 @@ def clearOutput():
         print("Clearing outputs...")
         shutil.rmtree('/workspace/outputs/files')
         os.makedirs('/workspace/outputs/files')
-        shutil.rmtree('/workspace/repositories/Fooocus/outputs')
-        os.makedirs('/workspace/repositories/Fooocus/outputs')
+        shutil.rmtree('/workspace/outputs')
+        os.makedirs('/workspace/outputs')
     except Exception as e:
         error_message = str(e)
         print("clear outputs task failed: ", error_message)
