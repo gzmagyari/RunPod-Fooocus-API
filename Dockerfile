@@ -77,6 +77,7 @@ COPY models/parsing_bisenet.pth /workspace/models/controlnet/parsing_bisenet.pth
 COPY models/model_base_caption_capfilt_large.pth /workspace/models/clip_vision/model_base_caption_capfilt_large.pth
 COPY models/sdxl_hyper_sd_4step_lora.safetensors /workspace/models/loras/sdxl_hyper_sd_4step_lora.safetensors
 COPY models/stable-diffusion-safety-checker.bin /workspace/models/safety_checker/stable-diffusion-safety-checker.bin
+COPY models/xl-to-v1_interposer-v4.0.safetensors /workspace/models/vae_approx/xl-to-v1_interposer-v4.0.safetensors
 
 #RUN wget -O /workspace/models/checkpoints/juggernautXL_v8Rundiffusion.safetensors https://huggingface.co/lllyasviel/fav_models/resolve/main/fav/juggernautXL_v8Rundiffusion.safetensors?download=true
 #RUN wget -O /workspace/models/loras/sd_xl_offset_example-lora_1.0.safetensors https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_offset_example-lora_1.0.safetensors?download=true
