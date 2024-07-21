@@ -15,7 +15,7 @@ else
 fi
 
 # Check if the image is already tagged
-IMAGE_TAG="gzmagyari/fooocus-api-pb:local"
+IMAGE_TAG="gzmagyari/fooocus-api-pb:optimized"
 docker tag fooocus-api-pb $IMAGE_TAG
 
 # Push the Docker image to Docker Hub
