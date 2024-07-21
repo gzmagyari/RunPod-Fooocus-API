@@ -106,6 +106,7 @@ COPY models/xl-to-v1_interposer-v4.0.safetensors /workspace/models/vae_approx/xl
 #RUN wget -O /workspace/models/clip_vision/model_base_caption_capfilt_large.pth https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/model_base_caption_capfilt_large.pth?download=true
 #RUN wget -O /workspace/models/loras/sdxl_hyper_sd_4step_lora.safetensors https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/sdxl_hyper_sd_4step_lora.safetensors?download=true
 #RUN wget -O /workspace/models/safety_checker/stable-diffusion-safety-checker.bin https://huggingface.co/3WaD/RunPod-Fooocus-API/resolve/main/v0.3.30/stable-diffusion-safety-checker.bin?download=true
+#RUN wget -O /workspace/models/vae_approx/xl-to-v1_interposer-v4.0.safetensors https://huggingface.co/mashb1t/misc/resolve/main/xl-to-v1_interposer-v4.0.safetensors
 
 EXPOSE 8000
 
