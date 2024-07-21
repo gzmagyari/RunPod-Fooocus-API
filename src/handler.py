@@ -44,7 +44,7 @@ def run_inference(params):
             "models": ("GET", "/v1/engines/all-models"),
             "styles": ("GET", "/v1/engines/styles"),
             ### GenerateV1
-            "txt2img":  ("POST", "/v1/engine/generate"),
+            "txt2img":  ("POST", "/v1/engine/generate/"),
             "upscale-vary": ("POST", "/v1/generation/image-upscale-vary"), #multipart/form-data
             "inpaint-outpaint": ("POST", "/v1/generation/image-inpaint-outpaint"), #multipart/form-data
             "img2img":  ("POST", "/v1/generation/image-prompt"), #multipart/form-data
