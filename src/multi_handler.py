@@ -25,6 +25,9 @@ sd_session = requests.Session()
 retries = Retry(total=10, backoff_factor=0.1, status_forcelist=[502, 503, 504])
 sd_session.mount('http://', HTTPAdapter(max_retries=retries))
 
+# Lock for thread-safe instance management
+instance_lock = threading.Lock()
+
 # ---------------------------------------------------------------------------- #
 #                               Functions                                      #
 # ---------------------------------------------------------------------------- #
@@ -181,19 +184,17 @@ def clear_output_directories():
 
 def get_free_instance():
     """Get a free API instance."""
-    for instance in API_INSTANCES:
-        if not instance["busy"]:
-            instance["busy"] = True
-            return instance
+    with instance_lock:
+        for instance in API_INSTANCES:
+            if not instance["busy"]:
+                instance["busy"] = True
+                return instance
     return None
-
-def get_random_instance():
-    """Get a random API instance."""
-    return API_INSTANCES[0]
 
 def release_instance(instance):
     """Release the API instance."""
-    instance["busy"] = False
+    with instance_lock:
+        instance["busy"] = False
 
 # ---------------------------------------------------------------------------- #
 #                                RunPod Handler                                #
@@ -207,7 +208,8 @@ def handler(event):
     # Get a free instance
     instance = get_free_instance()
     if instance is None:
-        instance = get_random_instance()
+        return {"error": "No free API instances available"}
+
     print(f"Using instance on port {instance['port']}")
 
     try:
