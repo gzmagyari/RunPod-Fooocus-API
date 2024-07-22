@@ -37,7 +37,7 @@ def start_api_instance(instance):
     cache_path = f"/temp/cache{port}"
 
     command = [
-        "python", "/launch.py",
+        "python", "/workspace/launch.py",
         "--disable-in-browser",
         "--always-gpu",
         "--disable-offload-from-vram",
