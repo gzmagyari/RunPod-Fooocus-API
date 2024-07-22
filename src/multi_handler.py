@@ -208,6 +208,7 @@ def handler(event):
     instance = get_free_instance()
     if instance is None:
         instance = get_random_instance()
+    print(f"Using instance on port {instance['port']}")
 
     try:
         # Main process
