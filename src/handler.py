@@ -127,7 +127,7 @@ def preview_stream(jsn, event):
         print("async preview task failed: ", error_message)
         return {"error": error_message}
 
-def clear_output():
+def clear_output_directories():
     try:
         print("Clearing outputs...")
         output_dirs = ['/workspace/outputs/files', '/workspace/outputs']
@@ -148,8 +148,8 @@ def handler(event):
     # Check for clear outputs option (defaults to True, send "clear_output":false in your payload to keep the images stored on the network volume.)
     # Also works on standalone but does not make much sense since the workers are stateless.
     clear_output = event["input"].get("clear_output", True)
-    if clear_output is True or clear_output.lower() == "true":
-        clear_output()
+    if clear_output is True or str(clear_output).lower() == "true":
+        clear_output_directories()
 
     # Main process
     json_response = run_inference(event["input"])
