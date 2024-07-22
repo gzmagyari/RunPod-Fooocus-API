@@ -36,6 +36,10 @@ def start_api_instance(instance):
     temp_path = f"/temp/fooocus_temp{port}"
     cache_path = f"/temp/cache{port}"
 
+    os.makedirs(output_path, exist_ok=True)
+    os.makedirs(temp_path, exist_ok=True)
+    os.makedirs(cache_path, exist_ok=True)
+
     command = [
         "python", "/workspace/launch.py",
         "--disable-in-browser",
