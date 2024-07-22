@@ -183,6 +183,10 @@ def get_free_instance():
             return instance
     return None
 
+def get_random_instance():
+    """Get a random API instance."""
+    return API_INSTANCES[0]
+
 def release_instance(instance):
     """Release the API instance."""
     instance["busy"] = False
@@ -199,7 +203,7 @@ def handler(event):
     # Get a free instance
     instance = get_free_instance()
     if instance is None:
-        return {"error": "No free API instances available"}
+        instance = get_random_instance()
 
     try:
         # Main process
