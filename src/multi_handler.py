@@ -17,8 +17,8 @@ from requests.adapters import HTTPAdapter, Retry
 
 # Configurations
 API_INSTANCES = [
-    {"port": 8887, "baseurl": "http://127.0.0.1:8888", "busy": False},
-    {"port": 4447, "baseurl": "http://127.0.0.1:4448", "busy": False},
+    {"port": 8887, "baseurl": "http://127.0.0.1:8888", "busy": False, "taskcount": 0},
+    {"port": 4447, "baseurl": "http://127.0.0.1:4448", "busy": False, "taskcount": 0},
     # Add more instances as needed
 ]
 sd_session = requests.Session()
@@ -181,13 +181,30 @@ def get_free_instance():
         for instance in API_INSTANCES:
             if not instance["busy"]:
                 instance["busy"] = True
+                instance["taskcount"] += 1
                 return instance
     return None
+
+def get_instance_by_lowest_taskcount():
+    """Get the API instance with the lowest task count."""
+    with instance_lock:
+        instance = min(API_INSTANCES, key=lambda x: x["taskcount"])
+        instance["busy"] = True
+        instance["taskcount"] += 1
+        return instance
+    
+def decrement_taskcount(instance):
+    """Decrement the task count for the specified instance."""
+    with instance_lock:
+        instance["taskcount"] -= 1
+        if instance["taskcount"] == 0:
+            instance["busy"] = False
 
 def release_instance(instance):
     """Release the API instance."""
     with instance_lock:
         instance["busy"] = False
+        instance["taskcount"] -= 1
 
 # ---------------------------------------------------------------------------- #
 #                                RunPod Handler                                #
@@ -199,9 +216,9 @@ async def handler(event):
         clear_output_directories()
 
     # Get a free instance
-    instance = get_free_instance()
+    instance = get_instance_by_lowest_taskcount()
     if instance is None:
-        return {"error": "No free API instances available"}
+        instance = API_INSTANCES[0]
 
     print(f"Using instance on port {instance['port']}")
 
@@ -215,7 +232,7 @@ async def handler(event):
         return json_response
     finally:
         # Release the instance
-        release_instance(instance)
+        decrement_taskcount(instance)
 
 def concurrency_handler(concurrency_modifier):
     global API_INSTANCES
