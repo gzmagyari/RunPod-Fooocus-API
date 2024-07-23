@@ -17,8 +17,8 @@ from requests.adapters import HTTPAdapter, Retry
 
 # Configurations
 API_INSTANCES = [
-    {"port": 8887, "baseurl": "http://127.0.0.1:8888", "busy": False, "taskcount": 0},
-    {"port": 4447, "baseurl": "http://127.0.0.1:4448", "busy": False, "taskcount": 0},
+    {"port": 8887, "baseurl": "http://127.0.0.1:8888", "busy": False, "taskcount": 0, "ready": False},
+    {"port": 4447, "baseurl": "http://127.0.0.1:4448", "busy": False, "taskcount": 0, "ready": False},
     # Add more instances as needed
 ]
 sd_session = requests.Session()
@@ -57,6 +57,7 @@ def start_api_instance(instance):
 
     subprocess.Popen(command)
     wait_for_service(instance["baseurl"])
+    instance["ready"] = True
 
 def wait_for_service(url):
     """Check if the service is ready to receive requests."""
@@ -179,7 +180,7 @@ def get_free_instance():
     """Get a free API instance."""
     with instance_lock:
         for instance in API_INSTANCES:
-            if not instance["busy"]:
+            if not instance["busy"] and instance["ready"]:
                 instance["busy"] = True
                 instance["taskcount"] += 1
                 return instance
@@ -188,7 +189,10 @@ def get_free_instance():
 def get_instance_by_lowest_taskcount():
     """Get the API instance with the lowest task count."""
     with instance_lock:
-        instance = min(API_INSTANCES, key=lambda x: x["taskcount"])
+        instances = [instance for instance in API_INSTANCES if instance["ready"]]
+        if len(instances) == 0:
+            return None
+        instance = min(instances, key=lambda x: x["taskcount"])
         instance["busy"] = True
         instance["taskcount"] += 1
         return instance
@@ -218,7 +222,7 @@ async def handler(event):
     # Get a free instance
     instance = get_instance_by_lowest_taskcount()
     if instance is None:
-        instance = API_INSTANCES[0]
+        return {"error": "No available instances to handle the request."}
 
     print(f"Using instance on port {instance['port']}")
 
