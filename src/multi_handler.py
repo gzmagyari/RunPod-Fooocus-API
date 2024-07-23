@@ -237,4 +237,4 @@ if __name__ == "__main__":
 
     print("Fooocus API Service is ready. Starting RunPod...")
 
-    runpod.serverless.start({"handler": handler, "concurrency_modifier": concurrency_handler})
+    runpod.serverless.start({"handler": handler})
