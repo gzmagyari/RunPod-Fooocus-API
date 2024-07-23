@@ -16,4 +16,4 @@ mkdir -p /temp/cache2
 
 echo "Starting RunPod Handler"
 cd /
-python -u /multi_handler.py --rp_serve_api --rp_api_host='0.0.0.0' --rp_api_port 8000 --rp_api_concurrency 2
+python -u /multi_handler.py --rp_serve_api --rp_api_host='0.0.0.0' --rp_api_port 8000
