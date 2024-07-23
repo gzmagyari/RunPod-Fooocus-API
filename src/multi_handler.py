@@ -217,6 +217,10 @@ async def handler(event):
         # Release the instance
         release_instance(instance)
 
+def concurrency_handler(concurrency_modifier):
+    global API_INSTANCES
+    return len(API_INSTANCES)
+
 def start_remaining_instances():
     """Start the remaining API instances."""
     for instance in API_INSTANCES[1:]:  # Skip the first instance as it is already started
@@ -233,4 +237,4 @@ if __name__ == "__main__":
 
     print("Fooocus API Service is ready. Starting RunPod...")
 
-    runpod.serverless.start({"handler": handler})
+    runpod.serverless.start({"handler": handler, "concurrency_modifier": concurrency_handler})
