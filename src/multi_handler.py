@@ -2,12 +2,14 @@
 import shutil
 import os
 import time
-import requests
 import re
 import base64
 import json
 import subprocess
 import threading
+import aiohttp
+import asyncio
+import requests
 
 # Dependencies
 import runpod
@@ -19,8 +21,6 @@ API_INSTANCES = [
     {"port": 4447, "baseurl": "http://127.0.0.1:4448", "busy": False},
     # Add more instances as needed
 ]
-
-# Session setup for retries
 sd_session = requests.Session()
 retries = Retry(total=10, backoff_factor=0.1, status_forcelist=[502, 503, 504])
 sd_session.mount('http://', HTTPAdapter(max_retries=retries))
@@ -70,7 +70,7 @@ def wait_for_service(url):
             print("Error: ", err)
         time.sleep(0.2)
 
-def run_inference(instance, params):
+async def run_inference(instance, params):
     """Run inference using the specified API instance."""
     config = {
         "api": {
@@ -97,13 +97,15 @@ def run_inference(instance, params):
     api_path = api_config[1].format(task_id=params.get("task_id", ""))
     response = {}
 
-    def process_img(value):
-        if re.search(r'https?:\/\/\S+', value) is not None:
-            return requests.get(value).content
-        elif re.search(r'^[A-Za-z0-9+/]+[=]{0,2}$', value) is not None and value != "None":
-            return base64.b64decode(value)
-        else:
-            return value
+    async def process_img(value):
+        async with aiohttp.ClientSession() as session:
+            if re.search(r'https?:\/\/\S+', value) is not None:
+                async with session.get(value) as resp:
+                    return await resp.read()
+            elif re.search(r'^[A-Za-z0-9+/]+[=]{0,2}$', value) is not None and value != "None":
+                return base64.b64decode(value)
+            else:
+                return value
 
     # Process image inputs
     input_imgs = {
@@ -117,7 +119,7 @@ def run_inference(instance, params):
     for key in input_imgs.keys():
         if key in params:
             try:
-                input_imgs[key] = process_img(params[key])
+                input_imgs[key] = await process_img(params[key])
             except Exception as e:
                 error_message = str(e)
                 print("Image conversion task failed: ", error_message)
@@ -128,25 +130,16 @@ def run_inference(instance, params):
         if value is not None:
             params[key] = base64.b64encode(value).decode('utf-8')
 
-    if api_verb == "GET":
-        response = sd_session.get(
-            url=f'{instance["baseurl"]}{api_path}', 
-            timeout=config["timeout"]
-        )
+    async with aiohttp.ClientSession() as session:
+        if api_verb == "GET":
+            async with session.get(f'{instance["baseurl"]}{api_path}', timeout=config["timeout"]) as resp:
+                response = await resp.json()
 
-    if api_verb == "POST":
-        response = sd_session.post(
-            url=f'{instance["baseurl"]}{api_path}',
-            json=params,
-            timeout=config["timeout"]
-        )
+        if api_verb == "POST":
+            async with session.post(f'{instance["baseurl"]}{api_path}', json=params, timeout=config["timeout"]) as resp:
+                response = await resp.json()
 
-    # --- Return the API response to the RunPod ---
-    content_type = response.headers.get('Content-Type', '')
-    if 'application/json' in content_type:
-        return response.json()
-    else:
-        return response.text
+    return response
 
 def preview_stream(jsn, event, instance):
     """Stream previews for async processing."""
@@ -199,7 +192,7 @@ def release_instance(instance):
 # ---------------------------------------------------------------------------- #
 #                                RunPod Handler                                #
 # ---------------------------------------------------------------------------- #
-def handler(event):
+async def handler(event):
     """This is the handler function that will be called by the serverless."""
     clear_output = event["input"].get("clear_output", True)
     if clear_output is True or str(clear_output).lower() == "true":
@@ -213,8 +206,7 @@ def handler(event):
     print(f"Using instance on port {instance['port']}")
 
     try:
-        # Main process
-        json_response = run_inference(instance, event["input"])
+        json_response = await run_inference(instance, event["input"])
         
         # Check for async preview streaming
         if 'preview_url' in event["input"] and 'job_step_preview' in json_response:
