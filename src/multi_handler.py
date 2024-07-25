@@ -1,4 +1,3 @@
-# Native
 import shutil
 import os
 import time
@@ -10,17 +9,58 @@ import threading
 import aiohttp
 import asyncio
 import requests
-
-# Dependencies
 import runpod
 from requests.adapters import HTTPAdapter, Retry
+import torch
+from colorama import Fore, Style
+import socket
 
-# Configurations
-API_INSTANCES = [
-    {"port": 8887, "baseurl": "http://127.0.0.1:8888", "busy": False, "taskcount": 0, "ready": False},
-    {"port": 4447, "baseurl": "http://127.0.0.1:4448", "busy": False, "taskcount": 0, "ready": False},
-    # Add more instances as needed
-]
+# ---------------------------------------------------------------------------- #
+#                               Configurations                                 #
+# ---------------------------------------------------------------------------- #
+
+# Initialize colorama
+print(Fore.CYAN + "Initializing Fooocus API Service..." + Style.RESET_ALL)
+
+# Get the number of workers from environment variable or default to number of GPUs
+API_WORKERS = int(os.getenv("API_WORKERS", torch.cuda.device_count()))
+
+# Function to check if a port is available
+def is_port_available(port):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('127.0.0.1', port)) != 0
+
+# Generate API_INSTANCES dynamically based on the number of workers and GPUs
+API_INSTANCES = []
+gpu_count = torch.cuda.device_count()
+port = 8887
+
+print(Fore.GREEN + f"Detected {gpu_count} GPU(s)" + Style.RESET_ALL)
+
+for i in range(API_WORKERS):
+    while not is_port_available(port) or not is_port_available(port + 1):
+        port += 2
+    gpu_id = i % gpu_count
+    API_INSTANCES.append({
+        "port": port,
+        "baseurl": f"http://127.0.0.1:{port + 1}",
+        "busy": False,
+        "taskcount": 0,
+        "ready": False,
+        "gpu_id": gpu_id
+    })
+    port += 2
+
+print(Fore.GREEN + f"Created {len(API_INSTANCES)} API instance(s)" + Style.RESET_ALL)
+
+print(Fore.GREEN + f"API_WORKERS environment variable: {API_WORKERS}" + Style.RESET_ALL)
+
+print(Fore.GREEN + f"Created {len(API_INSTANCES)} API instance(s)" + Style.RESET_ALL)
+
+for instance in API_INSTANCES:
+    print(Fore.GREEN + f"API instance on port {instance['port'] + 1} using GPU {instance['gpu_id']}" + Style.RESET_ALL)
+
+
 sd_session = requests.Session()
 retries = Retry(total=10, backoff_factor=0.1, status_forcelist=[502, 503, 504])
 sd_session.mount('http://', HTTPAdapter(max_retries=retries))
@@ -35,6 +75,7 @@ instance_lock = threading.Lock()
 def start_api_instance(instance):
     """Start a Fooocus API instance on the given port."""
     port = instance["port"]
+    gpu_id = instance["gpu_id"]
     output_path = f"/temp/fooocus_output{port}"
     temp_path = f"/temp/fooocus_temp{port}"
     cache_path = f"/temp/cache{port}"
@@ -52,12 +93,15 @@ def start_api_instance(instance):
         "--port", str(port),
         "--output-path", output_path,
         "--temp-path", temp_path,
-        "--cache-path", cache_path
+        "--cache-path", cache_path,
+        "--gpu-device-id", str(gpu_id)
     ]
 
+    print(Fore.YELLOW + f"Starting API instance on port {port} using GPU {gpu_id}" + Style.RESET_ALL)
     subprocess.Popen(command)
     wait_for_service(instance["baseurl"])
     instance["ready"] = True
+    print(Fore.YELLOW + f"API instance on port {port} is ready" + Style.RESET_ALL)
 
 def wait_for_service(url):
     """Check if the service is ready to receive requests."""
@@ -165,7 +209,7 @@ def preview_stream(jsn, event, instance):
 def clear_output_directories():
     """Clear output directories dynamically based on instances."""
     try:
-        print("Clearing outputs...")
+        print(Fore.CYAN + "Clearing outputs..." + Style.RESET_ALL)
         for instance in API_INSTANCES:
             output_path = f"/temp/fooocus_output{instance['port']}"
             if os.path.exists(output_path):
@@ -224,7 +268,7 @@ async def handler(event):
     if instance is None:
         return {"error": "No available instances to handle the request."}
 
-    print(f"Using instance on port {instance['port']}")
+    print(Fore.CYAN + f"Using instance on port {instance['port']}" + Style.RESET_ALL)
 
     try:
         json_response = await run_inference(instance, event["input"])
@@ -256,6 +300,6 @@ if __name__ == "__main__":
         if len(API_INSTANCES) > 1:
             threading.Thread(target=start_remaining_instances).start()
 
-    print("Fooocus API Service is ready. Starting RunPod...")
+    print(Fore.CYAN + "Fooocus API Service is ready. Starting RunPod..." + Style.RESET_ALL)
 
     runpod.serverless.start({"handler": handler, "concurrency_modifier": concurrency_handler})
