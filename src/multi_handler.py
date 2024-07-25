@@ -38,12 +38,12 @@ port = 8887
 print(Fore.GREEN + f"Detected {gpu_count} GPU(s)" + Style.RESET_ALL)
 
 for i in range(API_WORKERS):
-    while not is_port_available(port) or not is_port_available(port + 1):
+    while not is_port_available(port - 1) or not is_port_available(port):
         port += 2
     gpu_id = i % gpu_count
     API_INSTANCES.append({
         "port": port,
-        "baseurl": f"http://127.0.0.1:{port + 1}",
+        "baseurl": f"http://127.0.0.1:{port}",
         "busy": False,
         "taskcount": 0,
         "ready": False,
@@ -58,7 +58,7 @@ print(Fore.GREEN + f"API_WORKERS environment variable: {API_WORKERS}" + Style.RE
 print(Fore.GREEN + f"Created {len(API_INSTANCES)} API instance(s)" + Style.RESET_ALL)
 
 for instance in API_INSTANCES:
-    print(Fore.GREEN + f"API instance on port {instance['port'] + 1} using GPU {instance['gpu_id']}" + Style.RESET_ALL)
+    print(Fore.GREEN + f"API instance on port {instance['port']} using GPU {instance['gpu_id']}" + Style.RESET_ALL)
 
 
 sd_session = requests.Session()
@@ -90,7 +90,7 @@ def start_api_instance(instance):
         "--always-gpu",
         "--disable-offload-from-vram",
         "--listen", "0.0.0.0",
-        "--port", str(port),
+        "--port", str(port-1),
         "--output-path", output_path,
         "--temp-path", temp_path,
         "--cache-path", cache_path,
